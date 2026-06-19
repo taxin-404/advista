@@ -1,36 +1,161 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AdVista — Premium Advertising Marketplace
 
-## Getting Started
+A modern e-commerce platform where businesses can purchase advertising space. Built with Next.js 16, React, Tailwind CSS, Prisma, and PostgreSQL.
 
-First, run the development server:
+## Features
+
+- **Ad Placement Marketplace** — Browse categories (Homepage Banner, Sidebar, Header, Footer, Sponsored Posts, Featured Listings)
+- **Detailed Placement Pages** — Dimensions, location, traffic stats, impressions, pricing (daily/weekly/monthly/yearly)
+- **User Authentication** — Email/password + Google OAuth via NextAuth.js
+- **Shopping Cart & Checkout** — Stripe payment integration
+- **Advertiser Dashboard** — Campaign management, banner uploads, performance tracking
+- **Real-time Analytics** — Impressions, clicks, CTR, conversions tracking
+- **Media Kit** — Traffic stats, audience demographics, advertising opportunities
+- **Admin Panel** — Manage placements, advertisers, orders, approval workflow, payments, reports
+- **Ad Approval Workflow** — Submit → Pending Review → Approve/Reject
+- **Responsive Design** — Desktop, tablet, mobile optimized
+
+## Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| **Next.js 16** (App Router) | React framework |
+| **TypeScript** | Type safety |
+| **Tailwind CSS 4** | Styling |
+| **Prisma 5** | Database ORM |
+| **PostgreSQL** (Supabase) | Database |
+| **NextAuth.js** | Authentication |
+| **Stripe** | Payment processing |
+| **Supabase Storage** | Banner creative uploads |
+| **Resend** | Transactional emails |
+
+## Prerequisites
+
+- Node.js 18+
+- npm
+- A Supabase project (free tier works)
+- Stripe account (free to create)
+- Google OAuth credentials (free)
+
+## Setup
+
+### 1. Clone and install
+
+```bash
+git clone <repository-url> advista
+cd advista
+npm install
+```
+
+### 2. Configure environment variables
+
+Copy the example env file and fill in your credentials:
+
+```bash
+cp .env.example .env
+```
+
+Required variables:
+
+| Variable | Description | Where to get it |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | Supabase → Project Settings → Database |
+| `AUTH_SECRET` | NextAuth encryption secret | Run `openssl rand -base64 32` |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | Google Cloud Console |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | Google Cloud Console |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key | Stripe Dashboard |
+| `STRIPE_SECRET_KEY` | Stripe secret key | Stripe Dashboard |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_BASE_URL` | Your app URL | `http://localhost:3000` for development |
+
+### 3. Set up the database
+
+```bash
+# Push the Prisma schema to your Supabase database
+npx prisma db push
+
+# Seed with sample data (6 ad placements + admin user)
+npx prisma db seed
+```
+
+### 4. Start development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Default Admin Account
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+After seeding, you can sign in with:
+- **Email:** `admin@advista.com`
+- **Password:** `admin123`
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── (auth)/          # Login, Register, Forgot Password
+│   ├── (marketing)/     # Homepage, Placements, Pricing, Media Kit, How It Works
+│   ├── cart/            # Shopping cart
+│   ├── checkout/        # Checkout + success page
+│   ├── dashboard/       # Advertiser dashboard (protected)
+│   ├── admin/           # Admin panel (protected, admin role)
+│   └── api/             # API routes
+├── components/
+│   ├── ui/              # Button, Card, Badge
+│   ├── layout/          # Header, Footer, SessionProvider
+│   ├── marketing/       # Marketing page components
+│   ├── placements/      # AddToCartButton, etc.
+│   ├── dashboard/       # Dashboard components
+│   └── admin/           # Admin components
+├── context/             # Cart context
+├── lib/                 # Prisma, Auth, Stripe, Utilities
+├── hooks/               # React hooks
+├── types/               # TypeScript types
+└── middleware.ts        # Route protection
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API Routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/auth/[...nextauth]` | GET, POST | NextAuth handlers |
+| `/api/auth/register` | POST | Create new account |
+| `/api/placements` | GET | List active placements |
+| `/api/placements/[slug]` | GET | Single placement detail |
+| `/api/orders` | GET | User's orders |
+| `/api/campaigns` | GET, POST | User's campaigns |
+| `/api/checkout/stripe` | POST | Create Stripe checkout session |
+| `/api/analytics/overview` | GET | Campaign analytics |
+| `/api/admin/approvals/[id]` | POST | Approve/reject campaign |
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run dev          # Start development server
+npm run build        # Production build
+npm start           # Start production server
+npm run lint        # Run ESLint
+npx prisma db push  # Push schema to database
+npx prisma db seed  # Seed database
+npx prisma studio   # Open Prisma Studio (DB browser)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+Deploy to Vercel:
+
+```bash
+npm i -g vercel
+vercel
+```
+
+Set all environment variables in the Vercel dashboard under Project Settings → Environment Variables.
+
+## License
+
+MIT

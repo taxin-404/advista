@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADVERTISER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum CampaignStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  PAUSED
+  COMPLETED
+  REJECTED
+}
+
+enum DurationType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum PaymentMethod {
+  STRIPE
+  PAYPAL
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String?
+  name           String?
+  company        String?
+  website        String?
+  avatarUrl      String?
+  phone          String?
+  role           Role      @default(ADVERTISER)
+  emailVerified  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts   Account[]
+  sessions   Session[]
+  orders     Order[]
+  campaigns  Campaign[]
+  payments   Payment[]
+  approvals  AdApproval[]
+}
+
+model AdPlacement {
+  id                   String   @id @default(cuid())
+  name                 String
+  slug                 String   @unique
+  category             String
+  description          String   @db.Text
+  dimensions           String
+  location             String
+  imageUrl             String?
+  trafficEstimate      Int?
+  impressionsEstimate  Int?
+  priceDaily           Decimal  @db.Decimal(10,2)
+  priceWeekly          Decimal  @db.Decimal(10,2)
+  priceMonthly         Decimal  @db.Decimal(10,2)
+  priceYearly          Decimal  @db.Decimal(10,2)
+  isActive             Boolean  @default(true)
+  sortOrder            Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  orders    Order[]
+  campaigns Campaign[]
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  userId        String
+  placementId   String
+  durationType  DurationType
+  startDate     DateTime
+  endDate       DateTime
+  totalPrice    Decimal       @db.Decimal(10,2)
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod?
+  paymentId     String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user      User        @relation(fields: [userId], references: [id])
+  placement AdPlacement @relation(fields: [placementId], references: [id])
+  campaigns Campaign[]
+  payments  Payment[]
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  userId      String
+  orderId     String
+  placementId String
+  title       String
+  targetUrl   String
+  bannerUrl   String?
+  altText     String?
+  startDate   DateTime
+  endDate     DateTime
+  status      CampaignStatus @default(DRAFT)
+  impressions Int            @default(0)
+  clicks      Int            @default(0)
+  conversions Int            @default(0)
+  spend       Decimal        @db.Decimal(10,2) @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user       User             @relation(fields: [userId], references: [id])
+  order      Order            @relation(fields: [orderId], references: [id])
+  placement  AdPlacement      @relation(fields: [placementId], references: [id])
+  dailyStats DailyAnalytics[]
+  approvals  AdApproval[]
+}
+
+model DailyAnalytics {
+  id          String   @id @default(cuid())
+  campaignId  String
+  date        DateTime
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  conversions Int      @default(0)
+  revenue     Decimal  @db.Decimal(10,2) @default(0)
+
+  campaign Campaign @relation(fields: [campaignId], references: [id])
+
+  @@unique([campaignId, date])
+  @@index([campaignId])
+}
+
+model AdApproval {
+  id         String         @id @default(cuid())
+  campaignId String
+  adminId    String
+  status     CampaignStatus
+  reason     String?        @db.Text
+  createdAt  DateTime       @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id])
+  admin    User      @relation(fields: [adminId], references: [id])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String
+  userId        String
+  amount        Decimal       @db.Decimal(10,2)
+  currency      String        @default("USD")
+  method        PaymentMethod
+  transactionId String?       @unique
+  status        String
+  createdAt     DateTime      @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}
+
+model PageAnalytics {
+  id                 String   @id @default(cuid())
+  month              DateTime
+  uniqueVisitors     Int
+  pageViews          Int
+  avgSessionDuration Float?
+  bounceRate         Float?
+  demographics       Json?
+  topPages           Json?
+  createdAt          DateTime @default(now())
+
+  @@unique([month])
+}
